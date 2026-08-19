@@ -1,0 +1,6 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.mediatek.game'; compileSdk 36
+ defaultConfig { applicationId 'com.mediatek.game'; minSdk 36; targetSdk 36; versionCode 1; versionName '1.0.0' }
+ signingConfigs { release { def ks=System.getenv('RELEASE_KEYSTORE'); if (ks != null && file(ks).exists()) { storeFile file(ks); storePassword System.getenv('KEYSTORE_PASSWORD'); keyAlias System.getenv('KEY_ALIAS'); keyPassword System.getenv('KEY_PASSWORD') } } }
+ buildTypes { release { minifyEnabled false; shrinkResources false; signingConfig signingConfigs.release } }
+}
