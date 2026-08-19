@@ -9,7 +9,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        if (Build.VERSION.SDK_INT >= 32) {
+        if (Build.VERSION.SDK_INT >= 33) {
             try {
                 Surface surface = getWindow().getDecorView().getDisplay().getSurface();
                 if (surface != null) {
