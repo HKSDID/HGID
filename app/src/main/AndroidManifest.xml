@@ -5,7 +5,7 @@
     android:label="Game Helio G100">
     <meta-data
       android:name="com.mediatek.game.GAMEPLAY_ACTIVITY"
-      android:value=".MainActivity" />
+      android:value=".GameplayActivity" />
 
     <activity android:name=".MainActivity" android:exported="true">
       <intent-filter>
