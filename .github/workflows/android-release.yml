@@ -1,0 +1,47 @@
+name: Game Helio G100 - Android Release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions: { contents: write }
+env: { JAVA_VERSION: '17', GRADLE_VERSION: '8.10', BUILD_TOOLS: '36.0.0' }
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: gradle }
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 36
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.10' }
+      - name: Prepare signing key
+        env:
+          RELEASE_KEY_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+          if [ -n "$RELEASE_KEY_B64" ] && [ -n "$KS_PASS" ] && [ -n "$ALIAS" ] && [ -n "$KEY_PASS" ]; then
+            echo "$RELEASE_KEY_B64" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"; echo "KEY_ALIAS=$ALIAS" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" -storepass android -keypass android -alias gamehelio -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Game Helio G100, O=Developer, C=ID"
+            echo "KEYSTORE_PASSWORD=android" >> "$GITHUB_ENV"; echo "KEY_ALIAS=gamehelio" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
+          fi
+          echo "RELEASE_KEYSTORE=$GITHUB_WORKSPACE/release.keystore" >> "$GITHUB_ENV"
+      - name: Build release APK
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Verify APK
+        run: $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose app/build/outputs/apk/release/app-release.apk
+      - name: SHA256
+        run: sha256sum app/build/outputs/apk/release/app-release.apk | tee app-release.sha256
+      - uses: actions/upload-artifact@v4
+        with: { name: GameHelioG100-Android16-API36, path: "app/build/outputs/apk/release/app-release.apk" }
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with: { files: "app/build/outputs/apk/release/app-release.apk\napp-release.sha256", generate_release_notes: true }
+        
