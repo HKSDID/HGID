@@ -4,6 +4,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.view.Surface;
+import android.view.Display;
+import java.lang.reflect.Method;
 
 public final class MainActivity extends Activity {
     @Override
@@ -11,7 +13,9 @@ public final class MainActivity extends Activity {
         super.onCreate(b);
         if (Build.VERSION.SDK_INT >= 33) {
             try {
-                Surface surface = getWindow().getDecorView().getDisplay().getSurface();
+                Display display = getWindow().getDecorView().getDisplay();
+                Method getSurfaceMethod = Display.class.getMethod("getSurface");
+                Surface surface = (Surface) getSurfaceMethod.invoke(display);
                 if (surface != null) {
                     surface.setFrameRate(120f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
                 }
