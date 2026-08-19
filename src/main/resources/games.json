@@ -1,0 +1,7 @@
+[
+  {"name":"Speed Drifters","package":"com.garena.game.fctw","notes":"120Hz/120FPS, anti-lag"},
+  {"name":"QQ飞车","package":"com.tencent.tmgp.speedmobile","notes":"120Hz/120FPS, anti-lag"},
+  {"name":"Placeholder Game A","package":"com.example.placeholderA","notes":"placeholder"},
+  {"name":"Placeholder Game B","package":"com.example.placeholderB","notes":"placeholder"},
+  {"name":"Placeholder Game C","package":"com.example.placeholderC","notes":"placeholder"}
+]
