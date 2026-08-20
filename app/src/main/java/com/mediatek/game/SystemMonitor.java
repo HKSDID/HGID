@@ -129,9 +129,19 @@ public class SystemMonitor {
         
         // Native and Java memory
         try {
-            stats.nativeMemory = Debug.getNativeHeap().totalMemory;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // For Android 12+, use Runtime memory as Debug.getNativeHeap() was removed
+                Runtime runtime = Runtime.getRuntime();
+                stats.nativeMemory = runtime.totalMemory() - runtime.freeMemory();
+            } else {
+                // For Android 11 and below, use Debug.getNativeHeap()
+                stats.nativeMemory = Debug.getNativeHeap().totalMemory;
+            }
         } catch (Exception e) {
-            Log.d(TAG, "Failed to read native memory");
+            Log.d(TAG, "Failed to read native memory, using fallback");
+            // Fallback to runtime memory
+            Runtime runtime = Runtime.getRuntime();
+            stats.nativeMemory = runtime.totalMemory() - runtime.freeMemory();
         }
         stats.javaMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         
