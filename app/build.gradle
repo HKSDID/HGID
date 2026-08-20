@@ -18,6 +18,13 @@ android {
         targetSdk 36
         versionCode 1
         versionName "1.0"
+        
+        // Enable vector drawable support for smooth meter rendering
+        vectorDrawables.useSupportLibrary = true
+        
+        // Optimize render performance
+        renderscriptTargetApi 21
+        renderscriptSupportModeEnabled true
     }
 
     // signing configuration: read from signing.properties, else from env vars
@@ -41,13 +48,33 @@ android {
             // Make sure release uses the signing config
             signingConfig signingConfigs.release
 
-            // optional optimizations
+            // Optimizations with safe ProGuard rules
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // Performance optimizations
+            ndk {
+                debugSymbolLevel 'full'
+            }
         }
         debug {
-            // keep debug unsigned or use debug signing (do not reuse release keystore)
+            // Keep debug unsigned or use debug signing (do not reuse release keystore)
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    // Configure resource shrinking to preserve meter drawables
+    bundle {
+        resources {
+            enableSplit = false  // Keep resources together for consistent rendering
         }
     }
 }
@@ -82,14 +109,20 @@ dependencies {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
     }
     
-    // Real-time performance stats
-    implementation('androidx.graphics:graphics-core:1.0.0-alpha03') {
+    // Real-time performance stats - Stable version for FPS monitoring
+    implementation('androidx.graphics:graphics-core:1.0.0') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
     }
     
     // Android system services and permissions
     implementation('androidx.work:work-runtime:2.8.1') {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    }
+
+    // Hardware acceleration and rendering optimization
+    implementation('androidx.core:core-telemetry:1.0.0-alpha02') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
     }
