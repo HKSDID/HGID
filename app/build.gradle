@@ -1,6 +1,37 @@
-plugins { id 'com.android.application' }
-android { namespace 'com.mediatek.game'; compileSdk 36
- defaultConfig { applicationId 'com.mediatek.game'; minSdk 36; targetSdk 36; versionCode 1; versionName '1.0.0' }
- signingConfigs { release { def ks=System.getenv('RELEASE_KEYSTORE'); if (ks != null && file(ks).exists()) { storeFile file(ks); storePassword System.getenv('KEYSTORE_PASSWORD'); keyAlias System.getenv('KEY_ALIAS'); keyPassword System.getenv('KEY_PASSWORD') } } }
- buildTypes { release { minifyEnabled false; shrinkResources false; signingConfig signingConfigs.release } }
+// Add near the top of the file, inside the `android {` block or before signingConfigs usage
+def keystorePropsFile = rootProject.file("signing.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
+// signing configuration: read from signing.properties, else from env vars
+signingConfigs {
+    release {
+        // storeFile: prefer the path in signing.properties, else use environment variable (useful for CI)
+        def storeFilePath = keystoreProps.getProperty('storeFile') ?: System.getenv('RELEASE_KEYSTORE')
+        if (storeFilePath) {
+            storeFile file(storeFilePath)
+        }
+
+        // passwords and alias (prefer signing.properties)
+        storePassword keystoreProps.getProperty('storePassword') ?: System.getenv('KEYSTORE_PASSWORD')
+        keyAlias     keystoreProps.getProperty('keyAlias')     ?: System.getenv('KEY_ALIAS')
+        keyPassword  keystoreProps.getProperty('keyPassword')  ?: System.getenv('KEY_PASSWORD')
+    }
+}
+
+buildTypes {
+    release {
+        // Make sure release uses the signing config
+        signingConfig signingConfigs.release
+
+        // optional optimizations
+        minifyEnabled true
+        shrinkResources true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+    debug {
+        // keep debug unsigned or use debug signing (do not reuse release keystore)
+    }
 }
