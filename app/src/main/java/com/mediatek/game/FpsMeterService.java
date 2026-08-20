@@ -38,7 +38,7 @@ public class FpsMeterService extends Service {
     private static final float TARGET_FRAME_TIME_60FPS = 16.67f; // milliseconds
     private static final float TARGET_FRAME_TIME_120FPS = 8.33f; // milliseconds
     
-    private Handler uiHandler;
+    private static Handler uiHandler;
     private int performanceMode = PERFORMANCE_MODE_BALANCED; // Default mode
     
     public static final int PERFORMANCE_MODE_BALANCED = 0;
@@ -50,7 +50,9 @@ public class FpsMeterService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "FpsMeterService onCreate");
-        uiHandler = new Handler(Looper.getMainLooper());
+        if (uiHandler == null) {
+            uiHandler = new Handler(Looper.getMainLooper());
+        }
     }
     
     @Override
@@ -64,7 +66,7 @@ public class FpsMeterService extends Service {
         
         // Create foreground notification (required for background service)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForeground(NOTIFICATION_ID, createNotification());
+            startForeground(NOTIFICATION_ID, createNotification().build());
         }
         
         return START_STICKY;
