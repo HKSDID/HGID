@@ -16,6 +16,8 @@ import android.util.Log;
 
 public final class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
+    private static final String ACTIVE_MSG = "Active while a supported game is running";
+    private static final String INACTIVE_MSG = "Inactive — will be active during gameplay if enabled";
 
     @Override
     protected void onCreate(Bundle b) {
@@ -48,9 +50,18 @@ public final class MainActivity extends Activity {
         gameModeSwitch.setText("Enable 120Hz Game Mode (gameplay only)");
         gameModeSwitch.setTextColor(Color.WHITE);
 
+        // Status label to explain transient activation
+        final TextView statusView = new TextView(this);
+        statusView.setTextColor(Color.LTGRAY);
+        statusView.setTextSize(14f);
+
         // Initialize switch state from persisted preference
         boolean persisted = PreferencesHelper.isHighRefreshEnabled(this);
         gameModeSwitch.setChecked(persisted);
+
+        // Initialize status from transient active flag
+        boolean active = PreferencesHelper.isGameModeActive(this);
+        statusView.setText(active ? ACTIVE_MSG : INACTIVE_MSG);
 
         gameModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -64,9 +75,15 @@ public final class MainActivity extends Activity {
                 } else {
                     GameModeController.disableGameMode(MainActivity.this);
                 }
+
+                // Update status label after action
+                boolean nowActive = PreferencesHelper.isGameModeActive(MainActivity.this);
+                statusView.setText(nowActive ? ACTIVE_MSG : INACTIVE_MSG);
             }
         });
+
         layout.addView(gameModeSwitch);
+        layout.addView(statusView);
 
         // Keep previous fallback: try set surface frame rate for API 33+
         if (Build.VERSION.SDK_INT >= 33) {
@@ -91,7 +108,15 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Restore UI state if needed (switch is initialized from prefs on create)
+        // Update status label on resume in case transient active state changed
+        try {
+            TextView statusView = (TextView) ((LinearLayout) getWindow().getDecorView()).getChildAt(1);
+            // The layout composition may vary; safeguard by re-reading the persisted transient flag
+            boolean active = PreferencesHelper.isGameModeActive(this);
+            statusView.setText(active ? ACTIVE_MSG : INACTIVE_MSG);
+        } catch (Exception ignored) {
+            // If layout structure differs, ignore — the status was initialized in onCreate
+        }
     }
 
     @Override
