@@ -24,9 +24,11 @@ public final class GameModeController {
         // Respect user preference for background running
         SharedPreferences prefs = activity.getSharedPreferences("game_prefs", Context.MODE_PRIVATE);
         boolean allowBackground = prefs.getBoolean("pref_allow_background_running", false);
+        boolean showFps = prefs.getBoolean("pref_show_fps_overlay", false);
+        boolean enableHigh = prefs.getBoolean("pref_enable_high_refresh", true);
 
-        // Request the highest display mode (e.g., 120Hz)
-        HighRefreshHelper.requestHighestRefreshRate(activity);
+        // Request the highest display mode (e.g., 120Hz) if enabled
+        if (enableHigh) HighRefreshHelper.requestHighestRefreshRate(activity);
 
         // For API 33+, also set surface frame-rate if available
         if (Build.VERSION.SDK_INT >= 33) {
@@ -44,6 +46,11 @@ public final class GameModeController {
 
         // Acquire a temporary wake lock while in foreground if needed
         acquireWakeLockIfNeeded(activity.getApplicationContext());
+
+        // Show FPS overlay if requested
+        if (showFps) {
+            FpsOverlay.show(activity);
+        }
 
         // Only start long-running background services if user allowed it
         if (allowBackground) {
@@ -68,6 +75,8 @@ public final class GameModeController {
         HighRefreshHelper.requestDefaultRefreshRate(activity);
         releaseWakeLock();
         persistGameEndedState(activity);
+        // Hide FPS overlay if present
+        try { FpsOverlay.hide(activity); } catch (Exception ignored) {}
         Log.i(TAG, "Game mode disabled (cleared preferred refresh)");
     }
 
