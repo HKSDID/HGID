@@ -44,13 +44,21 @@ public final class MainActivity extends Activity {
         layout.addView(title);
 
         // Switch to enable/disable gameplay-only 120Hz mode
-        Switch gameModeSwitch = new Switch(this);
+        final Switch gameModeSwitch = new Switch(this);
         gameModeSwitch.setText("Enable 120Hz Game Mode (gameplay only)");
         gameModeSwitch.setTextColor(Color.WHITE);
-        gameModeSwitch.setChecked(false); // default off
+
+        // Initialize switch state from persisted preference
+        boolean persisted = PreferencesHelper.isHighRefreshEnabled(this);
+        gameModeSwitch.setChecked(persisted);
+
         gameModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Persist the user's choice
+                PreferencesHelper.setHighRefreshEnabled(MainActivity.this, isChecked);
+
+                // Apply or remove transient game-mode behavior
                 if (isChecked) {
                     GameModeController.enableGameMode(MainActivity.this);
                 } else {
@@ -83,13 +91,13 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        // keep default behavior: do not auto-enable game mode on resume
+        // Restore UI state if needed (switch is initialized from prefs on create)
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // Ensure mode is cleared when paused (safety)
-        GameModeController.disableGameMode(this);
+        // Perform transient cleanup (do not change user preference)
+        GameModeController.onAppBackgrounded(this.getApplicationContext());
     }
 }

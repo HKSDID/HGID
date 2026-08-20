@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 import android.app.NotificationManager;
-import android.content.SharedPreferences;
 
 public final class GameModeController {
     private static final String TAG = "GameModeController";
@@ -21,11 +20,10 @@ public final class GameModeController {
     public static void enableGameMode(Activity activity) {
         if (activity == null) return;
 
-        // Respect user preference for background running
-        SharedPreferences prefs = activity.getSharedPreferences("game_prefs", Context.MODE_PRIVATE);
-        boolean allowBackground = prefs.getBoolean("pref_allow_background_running", false);
-        boolean showFps = prefs.getBoolean("pref_show_fps_overlay", false);
-        boolean enableHigh = prefs.getBoolean("pref_enable_high_refresh", true);
+        // Respect user preference for background running and FPS overlay via PreferencesHelper
+        boolean allowBackground = PreferencesHelper.isAllowBackgroundRunning(activity);
+        boolean showFps = PreferencesHelper.isShowFpsOverlay(activity);
+        boolean enableHigh = PreferencesHelper.isHighRefreshEnabled(activity);
 
         // Request the highest display mode (e.g., 120Hz) if enabled
         if (enableHigh) HighRefreshHelper.requestHighestRefreshRate(activity);
@@ -62,14 +60,13 @@ public final class GameModeController {
             Log.i(TAG, "Background running is disabled by preference — will not start background services");
         }
 
-        // Persist that game mode is active
-        prefs.edit().putBoolean("game_mode_active", true).apply();
+        // Persist transient active flag (separate from user's enable preference)
+        PreferencesHelper.setGameModeActive(activity, true);
 
-        // Placeholder: vendor-specific performance toggles could be invoked here
         Log.i(TAG, "Game mode enabled (requested high refresh)");
     }
 
-    // Disable/restore default behavior
+    // Disable/restore default behavior (transient)
     public static void disableGameMode(Activity activity) {
         if (activity == null) return;
         HighRefreshHelper.requestDefaultRefreshRate(activity);
@@ -120,11 +117,6 @@ public final class GameModeController {
 
     private static void stopBackgroundServices(Context context) {
         try {
-            // If your app has a specific long-running service, stop it here.
-            // Since there's no explicit service in the manifest, this is a no-op fallback.
-            // Example (uncomment and replace if you add a service):
-            // Intent svc = new Intent(context, GameBackgroundService.class);
-            // context.stopService(svc);
             Log.d(TAG, "stopBackgroundServices: no explicit services to stop (no-op)");
         } catch (Exception e) {
             Log.w(TAG, "Failed to stop background services", e);
@@ -138,8 +130,6 @@ public final class GameModeController {
                 try {
                     nm.cancel(GAME_NOTIFICATION_ID);
                 } catch (Exception ignored) {}
-                // As a last resort, cancel all app notifications relating to game (use with caution)
-                // nm.cancelAll();
                 Log.d(TAG, "Canceled game notifications (if any)");
             }
         } catch (Exception e) {
@@ -149,7 +139,6 @@ public final class GameModeController {
 
     private static void stopScheduledTasks() {
         try {
-            // If your app uses Executors or Timers for periodic work, shut them down here.
             Log.d(TAG, "stopScheduledTasks: no scheduled tasks known (no-op)");
         } catch (Exception e) {
             Log.w(TAG, "Failed to stop scheduled tasks", e);
@@ -158,8 +147,7 @@ public final class GameModeController {
 
     private static void persistGameEndedState(Context context) {
         try {
-            SharedPreferences prefs = context.getSharedPreferences("game_prefs", Context.MODE_PRIVATE);
-            prefs.edit().putBoolean("game_mode_active", false).apply();
+            PreferencesHelper.setGameModeActive(context, false);
         } catch (Exception e) {
             Log.w(TAG, "Failed to persist game ended state", e);
         }
