@@ -129,13 +129,13 @@ public class SystemMonitor {
         
         // Native and Java memory
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                // For Android 11 and below, use Debug.getNativeHeap()
+                stats.nativeMemory = Debug.getNativeHeap().totalMemory;
+            } else {
                 // For Android 12+, use Runtime memory as Debug.getNativeHeap() was removed
                 Runtime runtime = Runtime.getRuntime();
                 stats.nativeMemory = runtime.totalMemory() - runtime.freeMemory();
-            } else {
-                // For Android 11 and below, use Debug.getNativeHeap()
-                stats.nativeMemory = Debug.getNativeHeap().totalMemory;
             }
         } catch (Exception e) {
             Log.d(TAG, "Failed to read native memory, using fallback");
