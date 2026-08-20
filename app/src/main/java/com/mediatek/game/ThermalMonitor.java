@@ -1,7 +1,10 @@
 package com.mediatek.game;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -138,9 +141,21 @@ public class ThermalMonitor {
         // Battery stats (requires context)
         if (context != null && batteryManager != null) {
             try {
-                stats.batteryHealth = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_HEALTH);
-                stats.batteryStatus = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS);
-                stats.batteryVoltage = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // API 33+: Use BatteryManager properties
+                    stats.batteryHealth = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_HEALTH);
+                    stats.batteryStatus = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS);
+                    stats.batteryVoltage = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE);
+                } else {
+                    // Fallback: Use Intent-based battery info for older APIs
+                    IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                    Intent batteryStatus = context.registerReceiver(null, ifilter);
+                    if (batteryStatus != null) {
+                        stats.batteryHealth = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, -1);
+                        stats.batteryStatus = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                        stats.batteryVoltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0);
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Failed to read battery manager", e);
             }
