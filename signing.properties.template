@@ -1,0 +1,12 @@
+# signing.properties.template
+
+# Copy this file to `signing.properties` at the project root and fill the values.
+# DO NOT commit `signing.properties` — keep your keystore and passwords out of source control.
+
+# Absolute or relative path to your keystore file
+storeFile=/path/to/release-keystore.jks
+
+# Keystore and key passwords
+storePassword=change_me_store_password
+keyAlias=release
+keyPassword=change_me_key_password
