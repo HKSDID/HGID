@@ -56,11 +56,14 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     
-    // Performance monitoring and UI framework
+    // Performance monitoring and lifecycle support
     implementation 'androidx.core:core:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-process:2.6.2'
     
-    // Graphics and rendering support
+    // Real-time performance stats
     implementation 'androidx.graphics:graphics-core:1.0.0-alpha03'
+    
+    // Android system services and permissions
+    implementation 'androidx.work:work-runtime:2.8.1'
 }
