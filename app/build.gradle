@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'com.mediatek.game'
 }
 
 def keystorePropsFile = rootProject.file("signing.properties")
