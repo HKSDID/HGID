@@ -73,7 +73,9 @@ android {
 
     // Configure resource shrinking to preserve meter drawables
     bundle {
-        enableSplit = false  // Keep resources together for consistent rendering
+        language.enableSplit = false
+        density.enableSplit = false
+        abi.enableSplit = false
     }
 }
 
