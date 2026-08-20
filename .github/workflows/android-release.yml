@@ -29,19 +29,65 @@ jobs:
             echo "$RELEASE_KEY_B64" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
             echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"; echo "KEY_ALIAS=$ALIAS" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
           else
-            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" -storepass android -keypass android -alias gamehelio -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Game Helio G100, O=Developer, C=ID"
+            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" -storepass android -keypass android -alias gamehelio -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Game Helio G100, O=Game Helio, L=Unknown, ST=Unknown, C=US"
             echo "KEYSTORE_PASSWORD=android" >> "$GITHUB_ENV"; echo "KEY_ALIAS=gamehelio" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
           fi
           echo "RELEASE_KEYSTORE=$GITHUB_WORKSPACE/release.keystore" >> "$GITHUB_ENV"
       - name: Build release APK
         run: gradle --no-daemon :app:assembleRelease
-      - name: Verify APK
-        run: $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose app/build/outputs/apk/release/app-release.apk
-      - name: SHA256
-        run: sha256sum app/build/outputs/apk/release/app-release.apk | tee app-release.sha256
+
+      # Align, sign (v1/v2/v3/v4) and verify the APK. Keeps v1 enabled for legacy sideloading compatibility.
+      - name: Zipalign APK
+        run: |
+          set -e
+          ALIGNED_APK=app/build/outputs/apk/release/app-release-aligned.apk
+          UNALIGNED_APK=app/build/outputs/apk/release/app-release.apk
+          $ANDROID_HOME/build-tools/36.0.0/zipalign -v -p 4 "$UNALIGNED_APK" "$ALIGNED_APK"
+
+      - name: Sign APK (apksigner v1/v2/v3/v4)
+        env:
+          KEYSTORE_PASSWORD: ${{ env.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ env.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
+          RELEASE_KEYSTORE: ${{ env.RELEASE_KEYSTORE }}
+        run: |
+          set -e
+          ALIGNED_APK=app/build/outputs/apk/release/app-release-aligned.apk
+          SIGNED_APK=app/build/outputs/apk/release/app-release-signed.apk
+          # copy aligned APK to a new file and sign in-place
+          cp "$ALIGNED_APK" "$SIGNED_APK"
+          $ANDROID_HOME/build-tools/36.0.0/apksigner sign \
+            --ks "$RELEASE_KEYSTORE" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --v4-signing-enabled true \
+            "$SIGNED_APK"
+
+      - name: Verify signed APK
+        run: |
+          set -e
+          SIGNED_APK=app/build/outputs/apk/release/app-release-signed.apk
+          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs --verbose "$SIGNED_APK"
+
+      - name: SHA256 (signed)
+        run: sha256sum app/build/outputs/apk/release/app-release-signed.apk | tee app-release-signed.sha256
+
       - uses: actions/upload-artifact@v4
-        with: { name: GameHelioG100-Android16-API36, path: "app/build/outputs/apk/release/app-release.apk" }
+        with:
+          name: GameHelioG100-Android16-API36
+          path: |
+            app/build/outputs/apk/release/app-release-signed.apk
+            app-release-signed.sha256
+
       - if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
-        with: { files: "app/build/outputs/apk/release/app-release.apk\napp-release.sha256", generate_release_notes: true }
-        
+        with:
+          files: |
+            app/build/outputs/apk/release/app-release-signed.apk
+            app-release-signed.sha256
+          generate_release_notes: true
+          
